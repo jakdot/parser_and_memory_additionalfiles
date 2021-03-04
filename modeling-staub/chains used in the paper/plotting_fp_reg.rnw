@@ -1,0 +1,398 @@
+\documentclass{article}
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry}
+
+\usepackage{setspace}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, urlcolor=blue, breaklinks=true}
+
+\newcommand{\link}[1]{\footnote{\color{blue}\href{#1}{#1}}}
+\newcommand{\myhref}[1]{\href{#1}{#1}}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{linguex}
+\usepackage{natbib}
+
+%\usepackage{Sweave}
+
+<<include=FALSE>>=
+opts_chunk$set(fig.path='figures/figure_staub_exp3')
+@
+
+<<include=FALSE>>=
+opts_chunk$set(tidy=TRUE)
+@
+
+% The package for linguistics examples
+
+\title{Plot and examine chains: 3 regions (FP + reg)}
+\author{JD}
+
+\begin{document}
+\maketitle
+
+\section{Simple model and plots}
+
+This file collects draws and generates plots and info about parameters.
+
+<<echo=TRUE>>=
+
+burnin <- 200
+
+library(dplyr)
+library(rstan)
+
+c1 <- read.csv("chain1/chain-0.csv")
+
+dataf <- select(c1, starts_with("mu_rt"))
+
+dataf <- dataf[burnin:length(dataf[,1]),]
+
+str(dataf)
+
+dataf2 <- select(c1, starts_with("mu_reg"))
+
+dataf2 <- dataf2[burnin:length(dataf2[,1]),]
+
+str(dataf2)
+
+c2 <- read.csv("chain2/chain-0.csv")
+
+dataf.c2 <- select(c2, starts_with("mu_rt"))
+
+dataf.c2 <- dataf.c2[burnin:length(dataf.c2[,1]),]
+
+dataf <- rbind(dataf, dataf.c2)
+
+str(dataf)
+
+dataf2.c2 <- select(c2, starts_with("mu_reg"))
+
+dataf2.c2 <- dataf2.c2[burnin:length(dataf2.c2[,1]),]
+
+dataf2 <- rbind(dataf2, dataf2.c2)
+
+str(dataf2)
+
+ndraws <- length(dataf[,1])
+
+data.all <- data.frame(region=factor(rep(rep(c("that / over", "walked / ambled", "across the quad"), each=ndraws), 4), levels=c("that / over", "walked / ambled", "across the quad")), grammatical=c(rep("Grammatical", ndraws*6), rep("Ungrammatical", ndraws*6)), frequency=c(rep("high", ndraws*3), rep("low", ndraws*3), rep("high", ndraws*3), rep("low", ndraws*3)), RT=c(dataf[,1], dataf[,2], dataf[,3], dataf[,4], dataf[,5], dataf[,6], dataf[,7], dataf[,8], dataf[,9], dataf[,10], dataf[,11], dataf[,12]), x=rep(c(237, 266, 810, 239, 306, 765, 249, 322, 675, 252, 340, 730), each=ndraws))
+
+str(data.all)
+
+@
+
+Prepare data for plots.
+
+<<echo=TRUE>>=
+
+library(ggplot2)
+
+library(dplyr)
+
+dodge <- position_dodge(width=0.2)
+
+data.to.plot <- data.all %>%
+    group_by(region, grammatical, frequency) %>%
+    summarise(Region=first(region), Grammatical=first(grammatical), Frequency=first(frequency), CF1=quantile(RT, probs=c(0.05, 0.95))[1], CF2=quantile(RT, probs=c(0.05, 0.95))[2], RT=mean(RT), Observed=first(x))
+
+data.to.plot
+
+g1 <- ggplot(data.to.plot, aes(Grammatical, RT, color=Frequency, fill=Frequency))
+g1 <- g1 + geom_point(position=dodge, size=I(3)) + geom_errorbar(aes(ymin=CF1, ymax=CF2), position=dodge, width=0.3, size=I(1.2)) + scale_shape_manual(values=21:24) + scale_color_manual(values=c("gold3", "blue4")) + scale_fill_manual(values=c("gold2", "blue4")) + theme_bw(30)# + theme(legend.justification = c(0.98, 0.9), legend.position = c(0.74, 0.9)) 
+g1 <- g1 + geom_point(aes(x=Grammatical, y=Observed, fill=Frequency), pch=24, position=dodge, size=4) + facet_grid(Region~.)
+
+@
+
+<<echo=FALSE, fig.pos="H", fig.width=14, fig.height=10>>=
+
+g1
+
+@
+
+
+<<echo=TRUE>>=
+
+ggsave("staub-firstpass.pdf", width=20, height=15)
+
+@
+
+<<echo=TRUE>>=
+
+g1 <- ggplot(data.to.plot, aes(Region, RT, color=Frequency, fill=Frequency))
+g1 <- g1 + geom_point(position=dodge, size=I(3)) + geom_errorbar(aes(ymin=CF1, ymax=CF2), position=dodge, width=0.3, size=I(1.2)) + scale_shape_manual(values=21:24) + scale_color_manual(values=c("gold3", "blue4")) + scale_fill_manual(values=c("gold2", "blue4")) + theme_bw(30)# + theme(legend.justification = c(0.98, 0.9), legend.position = c(0.74, 0.9)) 
+g1 <- g1 + coord_cartesian(ylim=c(200, 800)) + geom_point(aes(x=Region, y=Observed, fill=Frequency), pch=24, position=dodge, size=4) + facet_grid(Grammatical~.)
+
+@
+
+<<echo=FALSE, fig.pos="H", fig.width=14, fig.height=10>>=
+
+g1
+
+@
+
+<<echo=TRUE>>=
+
+ggsave("staub-firstpass-inonegraph.pdf", width=20, height=15)
+
+@
+
+<<echo=TRUE>>=
+
+ndraws <- length(dataf2[,1])
+
+data.all <- data.frame(region=factor(rep(rep(c("that / over", "walked / ambled", "across the quad"), each=ndraws), 4), levels=c("that / over", "walked / ambled", "across the quad")), grammatical=c(rep("Grammatical", ndraws*6), rep("Ungrammatical", ndraws*6)), frequency=c(rep("high", ndraws*3), rep("low", ndraws*3), rep("high", ndraws*3), rep("low", ndraws*3)), Reg=c(dataf2[,1], dataf2[,2], dataf2[,3], dataf2[,4], dataf2[,5], dataf2[,6], dataf2[,7], dataf2[,8], dataf2[,9], dataf2[,10], dataf2[,11], dataf2[,12]), x=rep(c(.06, .13, .40, .07, .17, .46, .16, .29, .59, .12, .34, .52), each=ndraws))
+
+str(data.all)
+
+#data.all <- subset(data.all, RT > 50 & RT < 3000)
+
+library(ggplot2)
+
+library(dplyr)
+
+data.to.plot <- data.all %>%
+    group_by(region, grammatical, frequency) %>%
+    summarise(Region=first(region), Grammatical=first(grammatical), Frequency=first(frequency), CF1=quantile(Reg, probs=c(0.05, 0.95))[1], CF2=quantile(Reg, probs=c(0.05, 0.95))[2], Regressions=mean(Reg), Observed=first(x))
+
+data.to.plot
+
+g1 <- ggplot(data.to.plot, aes(Grammatical, Regressions, color=Frequency, fill=Frequency))
+g1 <- g1 + geom_point(position=dodge, size=I(3)) + geom_errorbar(aes(ymin=CF1, ymax=CF2), position=dodge, width=0.3, size=I(1.2)) + scale_shape_manual(values=21:24) + scale_color_manual(values=c("gold3", "blue4")) + scale_fill_manual(values=c("gold2", "blue4")) + theme_bw(30)# + theme(legend.justification = c(0.98, 0.9), legend.position = c(0.74, 0.9)) 
+g1 <- g1 + geom_point(aes(x=Grammatical, y=Observed, fill=Frequency), pch=24, position=dodge, size=4) + facet_grid(Region~.)
+
+@
+
+<<echo=FALSE, fig.pos="H", fig.width=14, fig.height=10>>=
+
+g1
+
+@
+
+
+<<echo=TRUE>>=
+
+ggsave("staub-regressions.pdf", width=20, height=15)
+
+@
+
+<<echo=TRUE>>=
+
+g1 <- ggplot(data.to.plot, aes(Region, Regressions, color=Frequency, fill=Frequency))
+g1 <- g1 + geom_point(position=dodge, size=I(3)) + geom_errorbar(aes(ymin=CF1, ymax=CF2), position=dodge, width=0.3, size=I(1.2)) + scale_shape_manual(values=21:24) + scale_color_manual(values=c("gold3", "blue4")) + scale_fill_manual(values=c("gold2", "blue4")) + theme_bw(30)# + theme(legend.justification = c(0.98, 0.9), legend.position = c(0.74, 0.9)) 
+g1 <- g1 + coord_cartesian(ylim=c(0, 0.7)) + geom_point(aes(x=Region, y=Observed, fill=Frequency), pch=24, position=dodge, size=4) + facet_grid(Grammatical~.)
+
+@
+
+<<echo=FALSE, fig.pos="H", fig.width=14, fig.height=10>>=
+
+g1
+
+@
+<<echo=TRUE>>=
+
+ggsave("staub-regressions-inonegraph.pdf", width=20, height=15)
+
+@
+
+
+\section{Parameters}
+
+<<echo=FALSE>>=
+
+burnin <- 200
+
+collectParam <- function(param) {
+
+dataparam <- data.frame(draw=1:length(c1[,1]))
+
+dataparam$v2 <- select(c1, param)[,1]
+dataparam$v3 <- select(c2, param)[,1]
+
+return(dataparam)
+
+}
+
+createdraws <- function(param) {
+    dataparam <- collectParam(param)
+    draws <- array(data=c(dataparam$v2[burnin:length(dataparam$v2)], dataparam$v3[burnin:length(dataparam$v3)]), dim=c(length(dataparam$draw[burnin:length(dataparam$draw)]), 2))
+
+    return(draws)
+
+}
+
+@
+
+\subsection{LF}
+
+<<echo=TRUE>>=
+#############PARAMS###########
+draws <- createdraws("lf")
+
+str(draws)
+
+Rhat(draws)
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(latency_factor=c(draws[,1:2])), aes(latency_factor))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("staub-lf.pdf", width=20, height=12)
+
+@
+
+\subsection{LE}
+
+<<echo=TRUE>>=
+#############PARAMS###########
+draws <- createdraws("le")
+
+str(draws)
+
+Rhat(draws)
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(latency_exponent=c(draws[,1:2])), aes(latency_exponent))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("staub-le.pdf", width=20, height=12)
+
+@
+
+\subsection{Emma preparation time}
+
+<<echo=TRUE>>=
+#############PARAMS###########
+draws <- createdraws("emma_prep_time")
+
+str(draws)
+
+Rhat(draws)
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(emma_prep_time=c(draws[,1:2])), aes(emma_prep_time))
+g1 <- g1 + geom_histogram(xlim=c(0, 0.05)) + theme_bw(28)
+g1
+ggsave("staub-e.pdf", width=20, height=12)
+
+
+@
+
+\subsection{Prob regression}
+
+<<echo=TRUE>>=
+#############PARAMS###########
+draws <- createdraws("prob_regression")
+
+str(draws)
+
+Rhat(draws)
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(prob_regression=c(draws[,1:2])), aes(prob_regression))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("staub-p.pdf", width=20, height=12)
+
+@
+
+
+\subsection{Threshold}
+
+<<echo=TRUE>>=
+#############PARAMS###########
+draws <- createdraws("threshold")
+
+str(draws)
+
+Rhat(draws)
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(threshold=c(draws[,1:2])), aes(threshold))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("staub-t.pdf", width=20, height=12)
+
+@
+
+\subsection{Std}
+
+<<echo=TRUE>>=
+#############PARAMS###########
+draws <- createdraws("std")
+
+str(draws)
+
+Rhat(draws)
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(std=c(draws[,1:2])), aes(std))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("staub-std.pdf", width=20, height=12)
+
+@
+
+\end{document}

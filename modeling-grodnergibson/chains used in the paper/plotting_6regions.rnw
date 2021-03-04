@@ -1,0 +1,382 @@
+\documentclass{article}
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry}
+
+\usepackage{setspace}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, urlcolor=blue, breaklinks=true}
+
+\newcommand{\link}[1]{\footnote{\color{blue}\href{#1}{#1}}}
+\newcommand{\myhref}[1]{\href{#1}{#1}}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{linguex}
+\usepackage{natbib}
+
+%\usepackage{Sweave}
+
+<<include=FALSE>>=
+opts_chunk$set(fig.path='figures/figure7regions')
+@
+
+<<include=FALSE>>=
+opts_chunk$set(tidy=TRUE)
+@
+
+% The package for linguistics examples
+
+\title{Plot and examine chains: 6 regions (no wrap-up; no matrix verb)}
+\author{JD}
+
+\begin{document}
+
+\maketitle
+
+\section{Simple model and plots}
+
+This file collects draws and generates plots and info about parameters.
+
+<<echo=TRUE>>=
+
+burnin <- 500
+
+library(DBI)
+library(dplyr)
+library(rstan)
+library(loo)
+
+c1 <- read.csv("chain1/chain-0.csv")
+
+dataf <- select(c1, starts_with("subj_mu_rt"))
+
+dataf$std <- c1$std
+
+dataf <- dataf[burnin:length(dataf[,1]),]
+
+str(dataf)
+
+dataf2 <- select(c1, starts_with("obj_mu_rt"))
+
+dataf2$std <- c1$std
+
+dataf2 <- dataf2[burnin:length(dataf2[,1]),]
+
+str(dataf2)
+
+c2 <- read.csv("chain2/chain-0.csv")
+
+dataf.c2 <- select(c2, starts_with("subj_mu_rt"))
+
+dataf.c2$std <- c2$std
+
+dataf.c2 <- dataf.c2[burnin:length(dataf.c2[,1]),]
+
+dataf <- rbind(dataf, dataf.c2)
+
+str(dataf)
+
+dataf2.c2 <- select(c2, starts_with("obj_mu_rt"))
+
+dataf2.c2$std <- c2$std
+
+dataf2.c2 <- dataf2.c2[burnin:length(dataf2.c2[,1]),]
+
+dataf2 <- rbind(dataf2, dataf2.c2)
+
+str(dataf2)
+
+ndraws <- length(dataf2[,1])
+
+data.all <- data.frame(word_no=rep.int(rep(paste("No", 3:8, sep=""), each=ndraws), 2), word=factor(rep(rep(c("who", "sent /\nthe", "the /\nphotographer", "photographer /\nsent", "to", "the"), each=ndraws), 2), levels=c("who", "sent /\nthe", "the /\nphotographer", "photographer /\nsent", "to", "the")), extraction=c(rep("subj", ndraws*6), rep("obj", ndraws*6)), RT=c(dataf[,1], dataf[,2], dataf[,3], dataf[,4], dataf[,5], dataf[,6], dataf2[,1], dataf2[,2], dataf2[,3], dataf2[,4], dataf2[,5], dataf2[,6]), x=rep(c(349.8, 354.8, 334.3, 384, 346.5, 318.4, 343, 348.1, 357.6, 422.1, 375.8, 338.6), each=ndraws), std=c(rep(dataf$std, 6), rep(dataf2$std, 6)))
+
+#data.all <- data.frame(word_no=rep.int(rep(paste("No", 2:8, sep=""), each=ndraws), 2), word=factor(rep(c("reporter", "who", "sent", "the", "photographer", "to", "the ", "reporter ", "who ", "the  ", "photographer ", "sent ", "to ", "the   "), each=ndraws), levels=c("reporter", "who", "sent", "the", "photographer", "to", "the ", "reporter ", "who ", "the  ", "photographer ", "sent ", "to ", "the   ")), extraction=c(rep("subj", ndraws*7), rep("obj", ndraws*7)), RT=c(dataf[,4], dataf[,5], dataf[,6], dataf[,7], dataf[,8], dataf[,9], dataf[,10], dataf2[,4], dataf2[,5], dataf2[,6], dataf2[,7], dataf2[,8], dataf2[,9], dataf2[,10]), x=rep(c(360.2, 349.8, 354.8, 334.3, 384, 346.5, 318.4, 373.1, 343, 348.1, 357.6, 422.1, 375.8, 338.6), each=ndraws))
+
+str(data.all)
+
+@
+
+Prepare data for plots.
+
+<<echo=TRUE>>=
+
+library(ggplot2)
+
+library(dplyr)
+
+data.to.plot <- data.all %>%
+    group_by(extraction, word_no) %>%
+    summarise(Extraction=first(extraction), Word.no=as.factor(first(word_no)), Word=as.factor(first(word)), CF1=quantile(RT, probs=c(0.05, 0.95))[1], CF2=quantile(RT, probs=c(0.05, 0.95))[2], RT=mean(RT), Observed=first(x))
+
+data.to.plot
+
+g1 <- ggplot(data.to.plot, aes(Word, RT))
+g1 <- g1 + geom_point(aes(x=Word, y=Observed), fill="gold3", color="gold3", pch=24, size=4) + geom_point(color="blue4", size=I(4)) + geom_errorbar(aes(ymin=CF1, ymax=CF2), color="blue4", width=0.3, size=I(1.2)) + theme_bw(28)
+g1 <- g1 + theme(axis.text.x=element_text(angle=-45, hjust=0.1, size=28), axis.text.y=element_text(size=28), axis.title=element_text(size=28), legend.position="none", panel.grid.major = element_line(colour="grey", size=(0.25)), panel.grid.minor=element_blank())
+g1 <- g1 + coord_cartesian(ylim=c(300,500))  + facet_grid(Extraction~.)
+
+@
+
+<<echo=FALSE, fig.pos="H", fig.width=14, fig.height=10>>=
+
+g1
+
+@
+
+
+<<echo=TRUE>>=
+
+ggsave("predictions-observed-RT-grodner-gibson-exp1-6regions.pdf", width=20, height=12)
+
+@
+
+\section{WAIC}
+
+<<echo=TRUE>>=
+
+calculate_log_likelihood <- function(predicted, observed, std) {
+
+    log(dnorm(observed, mean=predicted, sd=std))
+
+}
+
+ll <- matrix(calculate_log_likelihood(data.all$RT, data.all$x, data.all$std), nrow=ndraws)
+
+str(ll)
+
+waic(ll)
+
+@
+\section{Posterior predictive checks}
+
+<<echo=TRUE>>=
+
+dataf <- read.csv("chain1/posterior_predictive_checks_subj.csv", row.names=1)
+
+str(dataf)
+
+dataf2 <- read.csv("chain1/posterior_predictive_checks_obj.csv", row.names=1)
+
+str(dataf2)
+
+dataf.c2 <- read.csv("chain2/posterior_predictive_checks_subj.csv", row.names=1)
+
+dataf <- rbind(dataf, dataf.c2)
+
+str(dataf)
+
+dataf2.c2 <- read.csv("chain2/posterior_predictive_checks_obj.csv", row.names=1)
+
+dataf2 <- rbind(dataf2, dataf2.c2)
+
+str(dataf)
+
+ndraws <- length(dataf2[,1])
+
+data.all <- data.frame(word_no=rep.int(rep(paste("No", 3:8, sep=""), each=ndraws), 2), word=factor(rep(rep(c("who", "sent /\nthe", "the /\nphotographer", "photographer /\nsent", "to", "the"), each=ndraws), 2), levels=c("who", "sent /\nthe", "the /\nphotographer", "photographer /\nsent", "to", "the")), extraction=c(rep("subj", ndraws*6), rep("obj", ndraws*6)), RT=c(dataf[,1], dataf[,2], dataf[,3], dataf[,4], dataf[,5], dataf[,6], dataf2[,1], dataf2[,2], dataf2[,3], dataf2[,4], dataf2[,5], dataf2[,6]), x=rep(c(349.8, 354.8, 334.3, 384, 346.5, 318.4, 343, 348.1, 357.6, 422.1, 375.8, 338.6), each=ndraws))
+
+str(data.all)
+
+#data.all <- subset(data.all, RT > 50 & RT < 3000)
+
+library(ggplot2)
+
+library(dplyr)
+
+data.to.plot <- data.all %>%
+    group_by(extraction, word_no) %>%
+    summarise(Extraction=first(extraction), Word.no=as.factor(first(word_no)), Word=as.factor(first(word)), CF1=quantile(RT, probs=c(0.05, 0.95))[1], CF2=quantile(RT, probs=c(0.05, 0.95))[2], RT=mean(RT), Observed=first(x))
+
+data.to.plot
+
+g1 <- ggplot(data.to.plot, aes(Word, RT))
+g1 <- g1 + geom_point(aes(x=Word, y=Observed), fill="gold3", color="gold3", pch=24, size=4) + geom_point(color="blue4", size=I(4)) + geom_errorbar(aes(ymin=CF1, ymax=CF2), color="blue4", width=0.3, size=I(1.2)) + theme_bw(28)
+g1 <- g1 + theme(axis.text.x=element_text(angle=-45, hjust=0.1, size=28), axis.text.y=element_text(size=28), axis.title=element_text(size=28), legend.position="none", panel.grid.major = element_line(colour="grey", size=(0.25)), panel.grid.minor=element_blank())
+g1 <- g1 + coord_cartesian(ylim=c(250,500))  + facet_grid(Extraction~.)
+
+@
+
+<<echo=FALSE, fig.pos="H", fig.width=14, fig.height=10>>=
+
+g1
+
+@
+
+
+<<echo=TRUE>>=
+
+ggsave("posterior-predictive-checks-grodner-gibson-exp1-6regions.pdf", width=20, height=12)
+
+@
+
+
+\section{Parameters}
+
+<<echo=FALSE>>=
+
+burnin <- 500
+
+collectParam <- function(param) {
+
+dataparam <- data.frame(draw=1:length(c1[,1]))
+
+dataparam$v <- select(c1, param)[,1]
+dataparam$v2 <- select(c2, param)[,1]
+
+#thinning
+#indices <- seq(1, length(dataparam$v), 2)
+#dataparam <- dataparam[indices,]
+
+return(dataparam)
+
+}
+
+createdraws <- function(param) {
+    dataparam <- collectParam(param)
+    draws <- array(data=c(dataparam$v[burnin:length(dataparam$v)], dataparam$v2[burnin:length(dataparam$v2)]), dim=c(length(dataparam$v[burnin:length(dataparam$v)]), 2))
+
+    return(draws)
+
+}
+@
+
+\subsection{LF}
+
+Rhat:
+<<>>=
+
+draws <- createdraws("lf")
+
+str(draws)
+
+Rhat(draws)
+
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(latency_factor=c(draws[,1:2])), aes(latency_factor))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("gg1-lf.pdf", width=20, height=12)
+
+@
+
+\subsection{LE}
+
+Rhat:
+<<>>=
+
+draws <- createdraws("le")
+
+Rhat(draws)
+
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(latency_exponent=c(draws[,1:2])), aes(latency_exponent))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("gg1-le.pdf", width=20, height=12)
+
+@
+
+\subsection{RF}
+
+Rhat:
+<<>>=
+
+draws <- createdraws("rf")
+
+Rhat(draws)
+
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(rule_firing=c(draws[,1:2])), aes(rule_firing))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("gg1-rf.pdf", width=20, height=12)
+@
+
+\subsection{Weight}
+
+Rhat:
+<<>>=
+
+draws <- createdraws("weight")
+
+Rhat(draws)
+
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(weight=c(draws[,1:2])), aes(weight))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("gg1-weight.pdf", width=20, height=12)
+@
+\subsection{Std}
+
+Rhat:
+<<>>=
+
+draws <- createdraws("std")
+
+Rhat(draws)
+
+@
+
+Mean etc.
+
+<<echo=TRUE>>=
+
+tail(draws)
+
+mean(c(draws[,1:2]))
+median(c(draws[,1:2]))
+sd(c(draws[,1:2]))
+
+g1 <- ggplot(data.frame(std=c(draws[,1:2])), aes(std))
+g1 <- g1 + geom_histogram() + theme_bw(28)
+g1
+ggsave("gg1-std.pdf", width=20, height=12)
+@
+
+\end{document}
