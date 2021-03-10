@@ -632,7 +632,7 @@ if __name__ == "__main__":
     total = {"activation": [], "position": [], "word": [], "sent_nr": [], "retrieve_wh": [], "reanalysis": [], "agreeing_actions": [], "matching_fs": [], "fan_size": []}
 
     #for sent_nr in (set(stimuli_csv.sentence.to_numpy())):
-    for sent_nr in range(1, 2):
+    for sent_nr in range(1, max(stimuli_csv.sentence)+1 ):
         subset_stimuli = stimuli_csv[stimuli_csv.sentence.isin([sent_nr])]
         words_list, acts, whs, reanalysis_list, agreeing_actions, matching_fs, fan_sizes =\
             read(parser, sentence=subset_stimuli.word.tolist(),\

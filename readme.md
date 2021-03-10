@@ -2,7 +2,7 @@
 
 This repository complements the paper: Parsing as a cue-based retrieval model.
 
-It includes models to replicate the analysis presented in the paper.
+It includes models to replicate the analysis presented in the paper. However, only the sub-symbolic part can be fully replicated (i.e., reading times)! Parsing output will differ from the full parser because this repository does not include full training data set (see Limitations below for details). 
 
 # What you need
 
@@ -12,11 +12,16 @@ It requires various packages:
 
 - pyactr (version 0.2.5 or higher; apart from Staub which requires an experimental pyactr package - see there for details)
 - numpy
+- nltk
 - pandas
 - mpi4py
 - pymc3
 
 The file in Staub needs a special pyactr experimental package (provided in there).
+
+# simple_examples
+
+This might be the best place to start. It shows how the parser parses some simple sentences. Novel sentences can be provided to the parser.
 
 # train_parser
 
