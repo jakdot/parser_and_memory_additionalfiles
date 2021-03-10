@@ -4,7 +4,7 @@ You can run run_parser_act.py to see how the parser parses sentences of Grodner 
 
 python3 run_parser_act.py
 
-However, keep in mind that in this illustrative case, we only use chunks based on the first few hundred sentences of the PTB (the full dataset is not freely available).
+However, keep in mind that only a small set of chunks for parsing is provided here - based only on a few few hundred sentences of the PTB (the full dataset is not freely available). If you want to get it, please get in touch.
 
 You can also run Bayesian model by running parallel_estimation. This requires you to have MPI and run it with 5 parallel jobs, i.e.:
 
