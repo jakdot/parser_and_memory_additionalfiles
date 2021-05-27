@@ -47,7 +47,6 @@ parser = actr.ACTRModel(environment, subsymbolic=True, retrieval_threshold=-20,
                         decay = 0.5, latency_factor=0.01, latency_exponent=0.01,
                         eye_mvt_angle_parameter=1, emma_noise=False,
                         eye_mvt_scaling_parameter=0.01,
-                        emma_preparation_time=0.09,
                         rule_firing=0.02, motor_prepared=True, automatic_visual_search=False)
 temp_dm = {}
 

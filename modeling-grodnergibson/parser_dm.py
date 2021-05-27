@@ -50,7 +50,6 @@ parser = actr.ACTRModel(environment, subsymbolic=True, retrieval_threshold=-20,
                         association_only_from_chunks=False,
                         buffer_spreading_activation={"g":4},
                         eye_mvt_angle_parameter=0, emma_noise=False,
-                        emma_preparation_time=0,
                         rule_firing=0.028, motor_prepared=True, automatic_visual_search=False)
 temp_dm = {}
 
