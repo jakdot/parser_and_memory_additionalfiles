@@ -290,9 +290,8 @@ if __name__ == "__main__":
     for condition in (set(stimuli_csv.label.to_numpy())):
         #condition = "obj_ext"
         for sent_nr in range(6, 7):
-            sent_nr = str(sent_nr)
             print(condition, sent_nr)
             subset_stimuli = stimuli_csv[stimuli_csv.label.isin([condition]) & stimuli_csv.item.isin([sent_nr])]
-            final_times = read(parser, sentence=subset_stimuli.word.tolist(), pos=subset_stimuli.function.tolist(), activations=activations, condition=str(condition), sent_nr=str(sent_nr), word_freq=word_freq, label_freq=label_freq, weight=1, decmem=DM, lexical=True, syntactic=True, visual=False, reanalysis=True, prints=True)
+            final_times = read(parser, sentence=subset_stimuli.word.tolist(), pos=subset_stimuli.function.tolist(), activations=activations, condition=str(condition), sent_nr=sent_nr, word_freq=word_freq, label_freq=label_freq, weight=1, decmem=DM, lexical=True, syntactic=True, visual=False, reanalysis=True, prints=True)
             print(final_times)
 
