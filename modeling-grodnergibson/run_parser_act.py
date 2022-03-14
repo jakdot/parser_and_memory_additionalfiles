@@ -604,7 +604,6 @@ if __name__ == "__main__":
 
     for condition in (set(stimuli_csv.label.to_numpy())):
         for sent_nr in range(1, 17):
-            sent_nr = str(sent_nr)
             print(condition, sent_nr)
             subset_stimuli = stimuli_csv[stimuli_csv.label.isin([condition]) & stimuli_csv.item.isin([sent_nr])]
             words_list, final_times, acts, whs, reanalysis_list, agreeing_actions, matching_fs, fan_sizes = read(parser, sentence=subset_stimuli.word.tolist(), pos=subset_stimuli.function.tolist(), actions=actions, blind_actions=blind_actions, word_freq=word_freq, label_freq=label_freq, decmem=DM, lexical=False, syntactic=True, visual=False, reanalysis=True, prints=True) # set Prints to false if you do not want to watch tree-building
